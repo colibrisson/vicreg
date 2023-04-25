@@ -134,7 +134,7 @@ def main(args):
     scaler = torch.cuda.amp.GradScaler()
 
     # Initialize learning rate before starting training
-    lr = adjust_learning_rate(args, optimizer, loader, step)
+    lr = adjust_learning_rate(args, optimizer, loader, step=0)
 
     for epoch in range(start_epoch, args.epochs):
         sampler.set_epoch(epoch)
