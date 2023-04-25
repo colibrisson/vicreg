@@ -233,5 +233,4 @@ def get_transform(transform_type):
                       'GlyphTransform': GlyphTransform,
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform}
-    transform = transform_dict[transform_type]
-    return transform()
+    return transform_dict[transform_type]
