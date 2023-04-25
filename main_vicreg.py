@@ -17,6 +17,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim
 import torch.distributed as dist
+from torch.utils.tensorboard import SummaryWriter
 
 import augmentations as aug
 import datasets as ds
@@ -97,6 +98,7 @@ def main(args):
         stats_file = open(args.exp_dir / "stats.txt", "a", buffering=1)
         print(" ".join(sys.argv))
         print(" ".join(sys.argv), file=stats_file)
+        writer = SummaryWriter()
 
     transforms = aug.get_transform(args.transform)
 
@@ -148,8 +150,8 @@ def main(args):
             y = y.cuda(gpu, non_blocking=True)
 
             with torch.cuda.amp.autocast():
-                loss = model.forward(x, y)
-            
+                loss, repr_loss, std_loss, cov_loss = model.forward(x, y)
+
             scaler.scale(loss).backward()
 
             # If we have accumulated enough gradients, update weights
@@ -173,6 +175,10 @@ def main(args):
                 )
                 print(json.dumps(stats))
                 print(json.dumps(stats), file=stats_file)
+                writer.add_scalar('training loss', loss.item(), step)
+                writer.add_scalar('representation loss', repr_loss.item(), step)
+                writer.add_scalar('std loss', std_loss.item(), step)
+                writer.add_scalar('cov loss', cov_loss.item(), step)
                 last_logging = current_time
         if args.rank == 0:
             state = dict(
@@ -238,7 +244,7 @@ class VICReg(nn.Module):
             + self.args.std_coeff * std_loss
             + self.args.cov_coeff * cov_loss
         )
-        return loss
+        return loss, repr_loss, std_loss, cov_loss
 
 
 def Projector(args, embedding):
