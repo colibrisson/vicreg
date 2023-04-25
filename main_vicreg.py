@@ -49,6 +49,7 @@ def get_arguments():
                         help='Number of epochs')
     parser.add_argument("--batch-size", type=int, default=2048,
                         help='Effective batch size (per worker batch size is [batch-size] / world-size)')
+    parser.add_argument("--accumulated-batch-size", type=int, default=2048)
     parser.add_argument("--base-lr", type=float, default=0.2,
                         help='Base learning rate, effective learning after warmup is [base-lr] * [batch-size] / 256')
     parser.add_argument("--wd", type=float, default=1e-6,
@@ -78,6 +79,10 @@ def get_arguments():
 
 
 def main(args):
+
+    # Number of iterations to accumulate gradients for
+    iters_to_accumulate = args.accumulated_batch_size // args.batch_size
+
     torch.backends.cudnn.benchmark = True
     init_distributed_mode(args)
     print(args)
@@ -101,6 +106,7 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         sampler=sampler,
+        drop_last=True,
     )
 
     model = VICReg(args).cuda(gpu)
@@ -126,20 +132,30 @@ def main(args):
 
     start_time = last_logging = time.time()
     scaler = torch.cuda.amp.GradScaler()
+
+    # Initialize learning rate before starting training
+    lr = adjust_learning_rate(args, optimizer, loader, step)
+
     for epoch in range(start_epoch, args.epochs):
         sampler.set_epoch(epoch)
         for step, ((x, y), _) in enumerate(loader, start=epoch * len(loader)):
             x = x.cuda(gpu, non_blocking=True)
             y = y.cuda(gpu, non_blocking=True)
 
-            lr = adjust_learning_rate(args, optimizer, loader, step)
-
-            optimizer.zero_grad()
             with torch.cuda.amp.autocast():
                 loss = model.forward(x, y)
+            
             scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+
+            # If we have accumulated enough gradients, update weights
+            if (step + 1) % iters_to_accumulate == 0:
+                # Update weights
+                scaler.step(optimizer)
+                scaler.update()
+                # Clear gradients
+                optimizer.zero_grad()
+                # Update learning rate                
+                lr = adjust_learning_rate(args, optimizer, loader, step)
 
             current_time = time.time()
             if args.rank == 0 and current_time - last_logging > args.log_freq_time:
@@ -167,7 +183,7 @@ def main(args):
 def adjust_learning_rate(args, optimizer, loader, step):
     max_steps = args.epochs * len(loader)
     warmup_steps = 10 * len(loader)
-    base_lr = args.base_lr * args.batch_size / 256
+    base_lr = args.base_lr * args.accumulated_batch_size / 256
     if step < warmup_steps:
         lr = base_lr * step / warmup_steps
     else:
