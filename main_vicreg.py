@@ -31,6 +31,8 @@ def get_arguments():
     # Data
     parser.add_argument("--data-dir", type=Path, default="/path/to/imagenet", required=True,
                         help='Path to the image net dataset')
+    parser.add_argument("--transform", type=str, default="SIMCLR")
+
 
     # Checkpoints
     parser.add_argument("--exp-dir", type=Path, default="./exp",
@@ -94,7 +96,7 @@ def main(args):
         print(" ".join(sys.argv))
         print(" ".join(sys.argv), file=stats_file)
 
-    transforms = aug.TrainTransform()
+    transforms = aug.get_transform(args.transform)
 
     dataset = datasets.ImageFolder(args.data_dir / "train", transforms)
     sampler = torch.utils.data.distributed.DistributedSampler(dataset, shuffle=True)

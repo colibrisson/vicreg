@@ -227,3 +227,11 @@ class LinearEvalGlyphValTransform(object):
     def __call__(self, sample):
         x = self.transform(sample)
         return x
+
+def get_transform(transform_type):
+    transform_dict = {'SIMCLR': TrainTransform,
+                      'GlyphTransform': GlyphTransform,
+                      'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
+                      'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform}
+    transform = transform_dict[transform_type]
+    return transform()
