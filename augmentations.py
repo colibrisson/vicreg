@@ -190,3 +190,40 @@ class GlyphTransform(object):
         x1 = self.transform(sample)
         x2 = self.transform_prime(sample)
         return x1, x2
+
+class LinearEvalGlyphTrainTransform(object):
+
+    def __init__(self) -> None:
+        self.transform = transforms.Compose(
+            [
+            transforms.RandomResizedCrop(224, scale=(0.7, 1.2), ratio=(0.75, 1.3333333333333333), interpolation=InterpolationMode.BICUBIC),
+            transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1),
+            GaussianBlur(p=0.3),
+            transforms.RandomGrayscale(p=0.3),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+    
+    def __call__(self, sample):
+        x = self.transform(sample)
+        return x
+class LinearEvalGlyphValTransform(object):
+    
+    def __init__(self) -> None:
+        self.transform = transforms.Compose(
+            [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+    def __call__(self, sample):
+        x = self.transform(sample)
+        return x
