@@ -1,0 +1,3 @@
+# Ignore pyc files and __pycache__ directories
+global-exclude *.pyc
+global-exclude __pycache__
