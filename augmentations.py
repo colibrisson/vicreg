@@ -286,5 +286,6 @@ def get_transform(transform_type):
                       'GlyphTransform': GlyphTransform,
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
-                      'WITransform': WITransform}
-    return transform_dict[transform_type]
+                      'WITransform': WITransform,
+                      }
+    return transform_dict.get(transform_type, None)
