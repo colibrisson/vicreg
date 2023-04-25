@@ -17,9 +17,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim
 import torch.distributed as dist
-import torchvision.datasets as datasets
 
 import augmentations as aug
+import datasets as ds
 from distributed import init_distributed_mode
 
 import resnet
@@ -32,6 +32,8 @@ def get_arguments():
     parser.add_argument("--data-dir", type=Path, default="/path/to/imagenet", required=True,
                         help='Path to the image net dataset')
     parser.add_argument("--transform", type=str, default="SIMCLR")
+    parser.add_argument("--dataset-structure", type=str, default="ImageFolder")
+
 
 
     # Checkpoints
@@ -98,7 +100,8 @@ def main(args):
 
     transforms = aug.get_transform(args.transform)
 
-    dataset = datasets.ImageFolder(args.data_dir / "train", transforms)
+    dataset_class = ds.get_dataset(args.dataset_structure)
+    dataset = dataset_class(root=args.data_dir, transforms=transforms)
     sampler = torch.utils.data.distributed.DistributedSampler(dataset, shuffle=True)
     assert args.batch_size % args.world_size == 0
     per_device_batch_size = args.batch_size // args.world_size
