@@ -161,7 +161,7 @@ def main(args):
                 scaler.update()
                 # Clear gradients
                 optimizer.zero_grad()
-                # Update learning rate                
+                # Update learning rate
                 lr = adjust_learning_rate(args, optimizer, loader, step)
 
             current_time = time.time()
