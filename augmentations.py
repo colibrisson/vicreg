@@ -22,9 +22,7 @@ class SauvolaBinarize(object):
         gray_array = np.array(gray_img)
         thresh_array = threshold_sauvola(gray_array, window_size=25, k=0.2)
         bin_array = gray_array < thresh_array
-        # footprint = disk(6)
-        # bin_array = closing(bin_array, footprint)
-        bin_img = Image.fromarray(bin_array.astype(np.uint8))
+        bin_img = Image.fromarray(bin_array.astype(np.uint8) * 255)
         return bin_img
 
 class OtsuBinarize(object):
