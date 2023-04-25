@@ -13,20 +13,31 @@ from torchvision.transforms import InterpolationMode
 import cv2 as cv
 from PIL import Image
 from skimage.filters import threshold_sauvola
-class Binarize(object):
+class SauvolaBinarize(object):
     def __init__(self):
         pass
 
     def __call__(self, pil_img):
         gray_img = pil_img.convert('L')
         gray_array = np.array(gray_img)
-        thresh_array = threshold_sauvola(gray_array, window_size=75, k=0.2)
+        thresh_array = threshold_sauvola(gray_array, window_size=25, k=0.2)
         bin_array = gray_array < thresh_array
         # footprint = disk(6)
         # bin_array = closing(bin_array, footprint)
         bin_img = Image.fromarray(bin_array.astype(np.uint8))
         return bin_img
-    
+
+class OtsuBinarize(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, pil_img):
+        gray_img = pil_img.convert('L')
+        gray_array = np.array(gray_img)
+        thresh_array = cv.threshold(gray_array, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)[1]
+        bin_img = Image.fromarray(thresh_array.astype(np.uint8))
+        return bin_img
+
 class Erosion(object):
     def __init__(self, kernel_size):
         self.k = kernel_size
@@ -36,6 +47,20 @@ class Erosion(object):
         kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (self.k, self.k))
         img = cv.erode(img, kernel, iterations=1)
         return Image.fromarray(img)
+    
+class RandomCropLine(object):
+    def __init__(self, output_size: tuple):
+        self.output_width = output_size[0]
+        self.output_height = output_size[1]
+
+    def __call__(self, img):
+        img_width, img_height = img.size
+        scale_factor = img_height / self.output_height
+        crop_length = int(img_width * scale_factor)
+        crop_start = np.random.randint(0, img_width - crop_length)
+        croped_img = img.crop((crop_start, 0, crop_start + crop_length, img_height))
+        resized_img = croped_img.resize((self.output_width, self.output_height))
+        return resized_img
     
 class RandomErosion(object):
     def __init__(self):
@@ -169,7 +194,7 @@ class GlyphTransform(object):
         )
         self.transform_prime = transforms.Compose(
             [
-                Binarize(),
+                SauvolaBinarize(),
                 transforms.RandomAffine((-10,10), translate=None, scale=(1,1), shear=(-20,20), interpolation=InterpolationMode.BICUBIC, fill=255, center=None),
                 transforms.RandomResizedCrop((224, 224), scale=(0.7, 1.2), ratio=(0.5, 1.5), interpolation=InterpolationMode.BICUBIC),
                 transforms.RandomApply(
@@ -227,10 +252,39 @@ class LinearEvalGlyphValTransform(object):
     def __call__(self, sample):
         x = self.transform(sample)
         return x
+    
+class WITransform(object):
+    def __init__(self):
+        self.transform = transforms.Compose(
+            [
+                RandomCropLine((224, 224)),
+                transforms.RandomApply(
+                    [
+                        transforms.ColorJitter(
+                            brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1
+                        )
+                    ],
+                    p=0.8,
+                ),
+                Solarization(p=0.3),
+                GaussianBlur(p=0.3),
+                transforms.RandomGrayscale(p=0.2),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+    def __call__(self, sample):
+        x1 = self.transform(sample)
+        x2 = self.transform(sample)
+        return x1, x2
 
 def get_transform(transform_type):
     transform_dict = {'SIMCLR': TrainTransform,
                       'GlyphTransform': GlyphTransform,
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
-                      'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform}
+                      'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
+                      'WITransform': WITransform}
     return transform_dict[transform_type]
