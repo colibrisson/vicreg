@@ -53,8 +53,8 @@ class RandomCropLine(object):
 
     def __call__(self, img):
         img_width, img_height = img.size
-        scale_factor = img_height / self.output_height
-        crop_length = int(img_width * scale_factor)
+        scale_factor = self.output_height / img_height
+        crop_length = int(self.output_width / scale_factor)
         crop_start = np.random.randint(0, img_width - crop_length)
         croped_img = img.crop((crop_start, 0, crop_start + crop_length, img_height))
         resized_img = croped_img.resize((self.output_width, self.output_height))
@@ -86,6 +86,8 @@ class Bin2RGB(object):
         pass
 
     def __call__(self, img):
+        if img.mode == 'RGB':
+            return img
         img = np.array(img)
         img = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
         return Image.fromarray(img)
@@ -256,6 +258,7 @@ class WITransform(object):
         self.transform = transforms.Compose(
             [
                 RandomCropLine((224, 224)),
+                Bin2RGB(),
                 transforms.RandomApply(
                     [
                         transforms.ColorJitter(
@@ -264,9 +267,9 @@ class WITransform(object):
                     ],
                     p=0.8,
                 ),
-                Solarization(p=0.3),
-                GaussianBlur(p=0.3),
                 transforms.RandomGrayscale(p=0.2),
+                GaussianBlur(p=1.0),
+                Solarization(p=0.3),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -275,9 +278,8 @@ class WITransform(object):
         )
 
     def __call__(self, sample):
-        x1 = self.transform(sample)
-        x2 = self.transform(sample)
-        return x1, x2
+        x = self.transform(sample)
+        return x
 
 def get_transform(transform_type):
     transform_dict = {'SIMCLR': TrainTransform,
