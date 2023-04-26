@@ -257,7 +257,8 @@ class WITransform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
-                RandomCropLine((224, 224)),
+                RandomCropLine((256, 256)),
+                transforms.RandomCrop((224, 224)),
                 Bin2RGB(),
                 transforms.RandomApply(
                     [
@@ -268,7 +269,7 @@ class WITransform(object):
                     p=0.8,
                 ),
                 transforms.RandomGrayscale(p=0.2),
-                GaussianBlur(p=1.0),
+                GaussianBlur(p=0.4),
                 Solarization(p=0.3),
                 transforms.ToTensor(),
                 transforms.Normalize(
