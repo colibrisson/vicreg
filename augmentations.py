@@ -269,7 +269,7 @@ class WITransform(object):
                     p=0.8,
                 ),
                 transforms.RandomGrayscale(p=0.2),
-                GaussianBlur(p=0.4),
+                GaussianBlur(p=0.5),
                 Solarization(p=0.3),
                 transforms.ToTensor(),
                 transforms.Normalize(
