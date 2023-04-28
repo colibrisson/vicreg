@@ -40,14 +40,11 @@ class FlatImageFolder(torchvision.datasets.VisionDataset):
     def __init__(self, root: str, transforms: Callable, is_valid_file: Callable = None) -> None:
         super().__init__(root)
         self.transforms = transforms()
-        
+
         if is_valid_file is None:
             is_valid_file = self.is_valid_file
-    
-        self.img_path_l = []
-        for img_path in pathlib.Path(root).rglob('*'):
-            if re.match(r'.*\.(jpg|png|jpeg)', img_path.name) and is_valid_file(img_path):
-                    self.img_path_l.append(img_path)
+
+        self.img_path_l = [img_path for img_path in pathlib.Path(root).rglob('*') if is_valid_file(img_path) and re.match(r'.*\.(jpg|png|jpeg)', img_path.name)]
         print(f'Found {len(self.img_path_l)} valid images in {root}')
 
     def __getitem__(self, index: int) -> torch.Tensor:
