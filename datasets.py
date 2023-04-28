@@ -55,17 +55,7 @@ class FlatImageFolder(torchvision.datasets.VisionDataset):
     
     @staticmethod
     def is_valid_file(img_path: str) -> bool:
-        try:
-            img = pil.Image.open(img_path)
-        except:
-            return False
-        img_array = np.array(img)
-        if img_array.mean() < 1:
-            return False
-        elif img_array.mean() > 254:
-            return False
-        else:
-            return True
+        pass
     
     def __len__(self) -> int:
         return len(self.img_path_l)
