@@ -55,7 +55,7 @@ class FlatImageFolder(torchvision.datasets.VisionDataset):
     
     @staticmethod
     def is_valid_file(img_path: str) -> bool:
-        pass
+        return True
     
     def __len__(self) -> int:
         return len(self.img_path_l)
