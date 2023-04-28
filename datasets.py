@@ -4,6 +4,7 @@ import pathlib
 from typing import Callable
 
 import torch
+import numpy as np
 import torchvision
 import PIL as pil
 
@@ -33,9 +34,49 @@ class ImgPair(torchvision.datasets.VisionDataset):
     
     def __len__(self) -> int:
         return 100_000
+    
+class FlatImageFolder(torchvision.datasets.VisionDataset):
+
+    def __init__(self, root: str, transforms: Callable, is_valid_file: Callable = None) -> None:
+        super().__init__(root)
+        self.transforms = transforms()
+        
+        if is_valid_file is None:
+            is_valid_file = self.is_valid_file
+    
+        self.img_path_l = []
+        for img_path in pathlib.Path(root).rglob('*'):
+            if re.match(r'.*\.(jpg|png|jpeg)', img_path.name) and is_valid_file(img_path):
+                    self.img_path_l.append(img_path)
+        print(f'Found {len(self.img_path_l)} valid images in {root}')
+
+    def __getitem__(self, index: int) -> torch.Tensor:
+        img_path = self.img_path_l[index]
+        img = pil.Image.open(img_path)
+        view_1, view_2 = self.transforms(img)
+        return ((view_1, view_2), 0)
+    
+    @staticmethod
+    def is_valid_file(img_path: str) -> bool:
+        try:
+            img = pil.Image.open(img_path)
+        except:
+            return False
+        img_array = np.array(img)
+        if img_array.mean() < 1:
+            return False
+        elif img_array.mean() > 254:
+            return False
+        else:
+            return True
+    
+    def __len__(self) -> int:
+        return len(self.img_path_l)
 
 
 def get_dataset(dataset_type: str) -> torchvision.datasets.VisionDataset:
     dataset_dict = {'ImgPair': ImgPair,
-                    'ImageFolder': torchvision.datasets.ImageFolder,}
+                    'ImageFolder': torchvision.datasets.ImageFolder,
+                    'FlatImageFolder': FlatImageFolder,
+                    }
     return dataset_dict.get(dataset_type, None)

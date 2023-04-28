@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+from typing import Any
 from PIL import ImageOps, ImageFilter
 import numpy as np
 import torchvision.transforms as transforms
@@ -24,6 +25,53 @@ class SauvolaBinarize(object):
         bin_array = gray_array < thresh_array
         bin_img = Image.fromarray(bin_array.astype(np.uint8) * 255)
         return bin_img
+
+class CropBlackBorder(object):
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, pil_img: Image) -> Image:
+        # binarize
+        gray_img = pil_img.convert('L')
+        gray_array = np.array(gray_img)
+        thresh_array = cv.threshold(gray_array, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)[1]
+        bin_img = Image.fromarray(thresh_array.astype(np.uint8))
+        return pil_img.crop(bin_img.getbbox())
+    
+class RandomCropNotAllBlack(object):
+    def __init__(self, size, pad_if_needed, padding_mode, fill) -> None:
+        self.crop = transforms.RandomCrop(size, pad_if_needed=pad_if_needed, padding_mode=padding_mode, fill=0)
+
+    def __call__(self, pil_img: Image) -> Image:
+        error_c = 0
+        while True:            
+            cropped_img = self.crop(pil_img)
+            gray_img = cropped_img.convert('L')
+            gray_array = np.array(gray_img)
+            thresh_array = cv.threshold(gray_array, 0, 1, cv.THRESH_BINARY + cv.THRESH_OTSU)[1]
+            if thresh_array.mean() > 0.3:
+                return cropped_img
+            elif error_c > 100:
+                return cropped_img
+            else:
+                error_c += 1
+
+class Scale(object):
+
+    def __init__(self, scale_factors: tuple) -> None:
+        self.width_scale_factor = scale_factors[0]
+        self.height_scale_factor = scale_factors[1]
+
+    def __call__(self, img: Image):
+        width, height = img.size
+        scale_factors = [self.width_scale_factor, self.height_scale_factor]
+        if scale_factors[0] == 0:
+            scale_factors[0] = scale_factors[1]
+        if scale_factors[1] == 0:
+            scale_factors[1] = scale_factors[0]
+        new_width = int(width * scale_factors[0])
+        new_height = int(height * scale_factors[1])
+        return img.resize((new_width, new_height), Image.Resampling.BICUBIC)
 
 class OtsuBinarize(object):
     def __init__(self):
@@ -60,6 +108,8 @@ class RandomCropLine(object):
         resized_img = croped_img.resize((self.output_width, self.output_height))
         return resized_img
     
+class RandomCropFragment(object):
+    pass
 class RandomErosion(object):
     def __init__(self):
         pass
@@ -281,6 +331,33 @@ class WITransform(object):
     def __call__(self, sample):
         x = self.transform(sample)
         return x
+    
+class Icdar_2020_WITransform(object):
+    def __init__(self):
+        self.transform = transforms.Compose(
+            [
+                CropBlackBorder(),
+                Scale((0, 4)),
+                RandomCropNotAllBlack((224, 224), pad_if_needed=True, padding_mode='constant', fill=0),
+                # transforms.RandomApply(
+                #     [
+                #         transforms.ColorJitter(
+                #             brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1
+                #         )
+                #     ],
+                #     p=0.8,
+                # ),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+    def __call__(self, img):
+        x1 = self.transform(img)
+        x2 = self.transform(img)
+        return x1, x2
 
 def get_transform(transform_type):
     transform_dict = {'SIMCLR': TrainTransform,
@@ -288,5 +365,6 @@ def get_transform(transform_type):
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
                       'WITransform': WITransform,
+                        'Icdar_2020_WITransform': Icdar_2020_WITransform
                       }
     return transform_dict.get(transform_type, None)
