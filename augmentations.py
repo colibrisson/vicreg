@@ -25,18 +25,6 @@ class SauvolaBinarize(object):
         bin_array = gray_array < thresh_array
         bin_img = Image.fromarray(bin_array.astype(np.uint8) * 255)
         return bin_img
-
-class CropBlackBorder(object):
-    def __init__(self) -> None:
-        pass
-
-    def __call__(self, pil_img: Image) -> Image:
-        # binarize
-        gray_img = pil_img.convert('L')
-        gray_array = np.array(gray_img)
-        thresh_array = cv.threshold(gray_array, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)[1]
-        bin_img = Image.fromarray(thresh_array.astype(np.uint8))
-        return pil_img.crop(bin_img.getbbox())
     
 class RandomCropNotAllBlack(object):
     def __init__(self, size, pad_if_needed, padding_mode, fill) -> None:
@@ -336,7 +324,6 @@ class Icdar_2020_WITransform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
-                CropBlackBorder(),
                 Scale((0, 4)),
                 RandomCropNotAllBlack((224, 224), pad_if_needed=True, padding_mode='constant', fill=0),
                 # transforms.RandomApply(
