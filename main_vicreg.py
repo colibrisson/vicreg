@@ -101,8 +101,8 @@ def main(args):
         writer = SummaryWriter()
 
     transforms = aug.get_transform(args.transform)
-
     dataset_class = ds.get_dataset(args.dataset_structure)
+
     dataset = dataset_class(root=args.data_dir, transforms=transforms)
     sampler = torch.utils.data.distributed.DistributedSampler(dataset, shuffle=True)
     assert args.batch_size % args.world_size == 0
