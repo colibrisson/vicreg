@@ -320,20 +320,64 @@ class WITransform(object):
         x = self.transform(sample)
         return x
     
+class WITransform2(object):
+    def __init__(self):
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomResizedCrop(
+                    224, interpolation=InterpolationMode.BICUBIC
+                ),
+                transforms.RandomApply(
+                    [
+                        transforms.ColorJitter(
+                            brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1
+                        )
+                    ],
+                    p=0.8,
+                ),
+                transforms.RandomGrayscale(p=0.2),
+                GaussianBlur(p=1.0),
+                Solarization(p=0.0),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+        self.transform_prime = transforms.Compose(
+            [
+                transforms.RandomResizedCrop(
+                    224, interpolation=InterpolationMode.BICUBIC
+                ),
+                transforms.RandomApply(
+                    [
+                        transforms.ColorJitter(
+                            brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1
+                        )
+                    ],
+                    p=0.8,
+                ),
+                transforms.RandomGrayscale(p=0.2),
+                GaussianBlur(p=0.1),
+                Solarization(p=0.2),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+    def __call__(self, sample):
+        x1 = self.transform(sample)
+        x2 = self.transform_prime(sample)
+        return x1, x2
+    
 class Icdar_2020_WITransform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
                 Scale((0, 4)),
                 RandomCropNotAllBlack((224, 224), pad_if_needed=True, padding_mode='constant', fill=0),
-                # transforms.RandomApply(
-                #     [
-                #         transforms.ColorJitter(
-                #             brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1
-                #         )
-                #     ],
-                #     p=0.8,
-                # ),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -352,6 +396,7 @@ def get_transform(transform_type):
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
                       'WITransform': WITransform,
-                        'Icdar_2020_WITransform': Icdar_2020_WITransform
+                        'Icdar_2020_WITransform': Icdar_2020_WITransform,
+                        'WITransform2': WITransform2,
                       }
     return transform_dict.get(transform_type, None)
