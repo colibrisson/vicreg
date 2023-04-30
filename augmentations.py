@@ -320,7 +320,7 @@ class WITransform(object):
         x = self.transform(sample)
         return x
     
-class WITransform2(object):
+class Icdar_2019_WI_Transform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
@@ -335,28 +335,7 @@ class WITransform2(object):
                     ],
                     p=0.8,
                 ),
-                transforms.RandomGrayscale(p=0.2),
-                GaussianBlur(p=1.0),
-                Solarization(p=0.0),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
-        self.transform_prime = transforms.Compose(
-            [
-                transforms.RandomResizedCrop(
-                    224, interpolation=InterpolationMode.BICUBIC
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.ColorJitter(
-                            brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1
-                        )
-                    ],
-                    p=0.8,
-                ),
+                Bin2RGB(),
                 transforms.RandomGrayscale(p=0.2),
                 GaussianBlur(p=0.1),
                 Solarization(p=0.2),
@@ -368,11 +347,10 @@ class WITransform2(object):
         )
 
     def __call__(self, sample):
-        x1 = self.transform(sample)
-        x2 = self.transform_prime(sample)
-        return x1, x2
+        x = self.transform(sample)
+        return x
     
-class Icdar_2020_WITransform(object):
+class Icdar_2020_WI_Transform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
@@ -396,7 +374,7 @@ def get_transform(transform_type):
                       'LinearEvalGlyphTrainTransform': LinearEvalGlyphTrainTransform,
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
                       'WITransform': WITransform,
-                        'Icdar_2020_WITransform': Icdar_2020_WITransform,
-                        'WITransform2': WITransform2,
+                        'Icdar_2020_WI_Transform': Icdar_2020_WI_Transform,
+                        'Icdar_2019_WI_Transform': Icdar_2019_WI_Transform,
                       }
     return transform_dict.get(transform_type, None)
