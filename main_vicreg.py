@@ -76,7 +76,7 @@ def get_arguments():
     # Distributed
     parser.add_argument('--world-size', default=1, type=int,
                         help='number of distributed processes')
-    parser.add_argument('--local-rank', default=-1, type=int)
+    parser.add_argument('--local_rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://',
                         help='url used to set up distributed training')
 
@@ -116,9 +116,10 @@ def main(args):
         drop_last=True,
     )
 
-    model = torch.compile(VICReg(args)).cuda()
+    model = VICReg(args).cuda(gpu)
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
+
     optimizer = LARS(
         model.parameters(),
         lr=0,
