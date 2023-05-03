@@ -104,9 +104,23 @@ class RandomErosion(object):
 
     def __call__(self, img):
         img = np.array(img)
-        k = np.random.randint(1, 6)
+        k = np.random.randint(1, 3)
         kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (k, k))
         img = cv.erode(img, kernel, iterations=1)
+        return Image.fromarray(img)
+    
+class RandomMorphology(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, img):
+        img = np.array(img)
+        k = np.random.randint(1, 3)
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (k, k))
+        if np.random.rand() > 0.5:
+            img = cv.dilate(img, kernel, iterations=1)
+        else:
+            img = cv.erode(img, kernel, iterations=1)
         return Image.fromarray(img)
     
 class Opening(object):
@@ -350,6 +364,21 @@ class Icdar_2019_WI_Transform(object):
         x = self.transform(sample)
         return x
     
+class Icdar_2019_WI_Transform2(object):
+    def __init__(self):
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomRotation((-10, 10), interpolation=InterpolationMode.BICUBIC, expand=True, fill=0),
+                transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(0.75, 1.3333333333333333), interpolation=InterpolationMode.BICUBIC),
+                transforms.RandomApply([RandomMorphology()], p=0.8),
+                transforms.ToTensor(),
+            ]
+        )
+
+    def __call__(self, sample):
+        x = self.transform(sample)
+        return x
+    
 class Icdar_2020_WI_Transform(object):
     def __init__(self):
         self.transform = transforms.Compose(
@@ -375,6 +404,6 @@ def get_transform(transform_type):
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
                       'WITransform': WITransform,
                         'Icdar_2020_WI_Transform': Icdar_2020_WI_Transform,
-                        'Icdar_2019_WI_Transform': Icdar_2019_WI_Transform,
+                        'Icdar_2019_WI_Transform2': Icdar_2019_WI_Transform2,
                       }
     return transform_dict.get(transform_type, None)
