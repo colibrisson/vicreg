@@ -48,6 +48,7 @@ def get_arguments():
                         help='Architecture of the backbone encoder network')
     parser.add_argument("--mlp", default="8192-8192-8192",
                         help='Size and number of layers of the MLP expander head')
+    parser.add_argument("--num-channels", type=int, default=3)
 
     # Optim
     parser.add_argument("--epochs", type=int, default=100,
@@ -215,7 +216,8 @@ class VICReg(nn.Module):
         self.args = args
         self.num_features = int(args.mlp.split("-")[-1])
         self.backbone, self.embedding = resnet.__dict__[args.arch](
-            zero_init_residual=True
+            zero_init_residual=True,
+            num_channels=args.num_channels,
         )
         self.projector = Projector(args, self.embedding)
 
