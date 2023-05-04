@@ -338,25 +338,15 @@ class Icdar_2019_WI_Transform(object):
     def __init__(self):
         self.transform = transforms.Compose(
             [
-                transforms.RandomResizedCrop(
-                    224, interpolation=InterpolationMode.BICUBIC
-                ),
-                transforms.RandomApply(
-                    [
-                        transforms.ColorJitter(
-                            brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1
-                        )
-                    ],
-                    p=0.8,
-                ),
+                transforms.RandomRotation((-10, 10), interpolation=InterpolationMode.BICUBIC, expand=False, fill=0),
+                transforms.RandomResizedCrop(224, interpolation=InterpolationMode.BICUBIC),
+                transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.8),
                 Bin2RGB(),
                 transforms.RandomGrayscale(p=0.2),
                 GaussianBlur(p=0.1),
                 Solarization(p=0.2),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ]
         )
 
