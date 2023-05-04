@@ -394,6 +394,7 @@ def get_transform(transform_type):
                       'LinearEvalGlyphValTransform': LinearEvalGlyphValTransform,
                       'WITransform': WITransform,
                         'Icdar_2020_WI_Transform': Icdar_2020_WI_Transform,
+                        'Icdar_2019_WI_Transform': Icdar_2019_WI_Transform,
                         'Icdar_2019_WI_Transform2': Icdar_2019_WI_Transform2,
                       }
     return transform_dict.get(transform_type, None)
