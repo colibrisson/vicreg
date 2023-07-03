@@ -77,7 +77,7 @@ def get_arguments():
     # Distributed
     parser.add_argument('--world-size', default=1, type=int,
                         help='number of distributed processes')
-    parser.add_argument('--local_rank', default=-1, type=int)
+    parser.add_argument('--local-rank', default=-1, type=int)
     parser.add_argument('--dist-url', default='env://',
                         help='url used to set up distributed training')
 
@@ -155,16 +155,20 @@ def main(args):
                 loss, repr_loss, std_loss, cov_loss = model.forward(x, y)
 
             scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad()
+            lr = adjust_learning_rate(args, optimizer, loader, step)
 
-            # If we have accumulated enough gradients, update weights
-            if (step + 1) % iters_to_accumulate == 0:
-                # Update weights
-                scaler.step(optimizer)
-                scaler.update()
-                # Clear gradients
-                optimizer.zero_grad()
-                # Update learning rate
-                lr = adjust_learning_rate(args, optimizer, loader, step)
+            # # If we have accumulated enough gradients, update weights
+            # if (step + 1) % iters_to_accumulate == 0:
+            #     # Update weights
+            #     scaler.step(optimizer)
+            #     scaler.update()
+            #     # Clear gradients
+            #     optimizer.zero_grad()
+            #     # Update learning rate
+            #     lr = adjust_learning_rate(args, optimizer, loader, step)
 
             current_time = time.time()
             if args.rank == 0 and current_time - last_logging > args.log_freq_time:
