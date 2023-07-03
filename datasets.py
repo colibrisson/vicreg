@@ -18,7 +18,7 @@ class ImgPair(torchvision.datasets.VisionDataset):
 
         self.img_by_folder_l = []
         for folder_path in self.root.iterdir():
-            img_path_l = [img_path for img_path in folder_path.iterdir() if re.match(r'.*\.(jpg|png|jpeg)', img_path.name)]
+            img_path_l = [img_path for img_path in folder_path.glob("*") if re.match(r'.*\.(jpg|png|jpeg)', img_path.name)]
             if len(img_path_l) > 0:
                 self.img_by_folder_l.append(img_path_l)
 
