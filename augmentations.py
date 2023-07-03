@@ -14,6 +14,7 @@ from torchvision.transforms import InterpolationMode
 import cv2 as cv
 from PIL import Image
 from skimage.filters import threshold_sauvola
+
 class SauvolaBinarize(object):
     def __init__(self):
         pass
@@ -387,6 +388,19 @@ class Icdar_2020_WI_Transform(object):
         x2 = self.transform(img)
         return x1, x2
 
+class NoTransform(object):
+    def __init__(self):
+        self.transform = transforms.Compose(
+            [
+                
+                transforms.ToTensor(),
+            ]
+        )
+
+    def __call__(self, img):
+        x = self.transform(img)
+        return x
+
 def get_transform(transform_type):
     transform_dict = {'SIMCLR': TrainTransform,
                       'GlyphTransform': GlyphTransform,
@@ -396,5 +410,6 @@ def get_transform(transform_type):
                         'Icdar_2020_WI_Transform': Icdar_2020_WI_Transform,
                         'Icdar_2019_WI_Transform': Icdar_2019_WI_Transform,
                         'Icdar_2019_WI_Transform2': Icdar_2019_WI_Transform2,
+                        'NoTransform': NoTransform,
                       }
     return transform_dict.get(transform_type, None)
